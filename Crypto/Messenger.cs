@@ -7,6 +7,7 @@ using System.Numerics;
 
 namespace Crypto
 {
+  
     public class Messenger
     {
         //used for generating p and q, they must sum to 1024 
@@ -26,7 +27,43 @@ namespace Crypto
         {
             Messenger msgr = new Messenger();
             msgr.RSA();
+            
+            msgr.ParseArguments(args); //Send down execution path with string array
+
         }
+
+        private void ParseArguments(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                Console.Error.WriteLine("Error: Arguments must be provided.");
+                PrintHelp();
+            }
+
+            switch (args[0])//TODO convert to enum
+            {
+                case "keyGen":
+                    break;
+                case "sendKey":
+                    break;
+                case "getKey":
+                    break;
+                case "sendMsg":
+                    break;
+                case "getMsg":
+                    break;
+                default:
+                    Console.Error.WriteLine("Error: unrecognized argument {0}", args[0]);
+                    PrintHelp();
+                    Environment.Exit(-1);//exit
+                    break;//please the compiler
+            }
+
+            
+
+
+        }
+
         private void RSA()
         {
             //first use PrimeGen to generate large numbers for P and Q
@@ -42,7 +79,7 @@ namespace Crypto
 
             var d = ModInverse(E, r); //using constant E
             
-            
+            //TODO figure out how to store these numbers, as a field or as return vals
 
 
         }
@@ -69,6 +106,16 @@ namespace Crypto
             return v;
         }
         
-        
+        /// <summary>
+        /// Print a help message. TODO customize msg
+        /// </summary>
+        private static void PrintHelp(){
+            Console.WriteLine("Usage: dotnet run <option> <option-specific args>");
+            Console.WriteLine("<keygen>: \t ");
+            Console.WriteLine("<sendKey>: \t");
+            Console.WriteLine("<getKey>: \t");
+            Console.WriteLine("<sendMsg>: \t");
+            Console.WriteLine("<getMsg>: \t");
+        }
     }
 }
