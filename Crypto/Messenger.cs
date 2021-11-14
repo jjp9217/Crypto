@@ -23,16 +23,41 @@ namespace Crypto
             this._generator = new PrimeGen(DefaultBitSize);
         }
 
+        
+
         public static void Main(string[] args)
         {
             Messenger msgr = new Messenger();
-            msgr.RSA();
+            msgr.Rsa();
             
             msgr.ParseArguments(args); //Send down execution path with string array
 
         }
+        
+        
 
-        private void ParseArguments(string[] args)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="keySize">Optional change to the key's bit length.</param>
+        public void KeyGen(int keySize=DefaultBitSize)
+        {
+            if (keySize != DefaultBitSize)//if we need to adjust the bit-length...
+            {
+                if (!ChangeBitLength(keySize))//ensure that transition is smooth
+                {
+                    Console.Error.WriteLine("Error: <keySize> must be greater than or equal to 32," +
+                                            "and a multiple of 8.");//it was not, halt program
+                    Environment.Exit(-1);
+                }
+            }
+                
+            Rsa();
+
+        }
+        
+
+        public void ParseArguments(string[] args)
         {
             if (args.Length == 0)
             {
@@ -43,7 +68,15 @@ namespace Crypto
             switch (args[0])//TODO convert to enum
             {
                 case "keyGen":
+                    if (args.Length != 2)
+                    {
+                        Console.Error.WriteLine("Error: <keygen> requires an argument <keySize>");
+                        return;
+                    }
+                    else KeyGen(Convert.ToInt32(args[1]));
+                  
                     break;
+                
                 case "sendKey":
                     break;
                 case "getKey":
@@ -58,13 +91,31 @@ namespace Crypto
                     Environment.Exit(-1);//exit
                     break;//please the compiler
             }
+        }//TODO
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
-            
-
-
-        }
-
-        private void RSA()
+        /// <summary>
+        /// Use RSA to generate a set of keys.
+        /// </summary>
+        private void Rsa()
         {
             //first use PrimeGen to generate large numbers for P and Q
             List<BigInteger> primes = _generator.GeneratePrimes(2);
@@ -83,6 +134,25 @@ namespace Crypto
 
 
         }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
         /// <summary>
         /// A method for finding the modular inverse of a BigInteger.
@@ -104,6 +174,16 @@ namespace Crypto
             v %= r;
             if (v<0) v = (v+r)%r;
             return v;
+        }
+        
+        /// <summary>
+        /// Wrapper for PrimeGen's ChangeBitLength method.
+        /// </summary>
+        /// <param name="newBitLength">The new bit length. Must be greater than/equal tp 32, and a multiple of 8</param>
+        /// <returns>Was the change successful?</returns>
+        private Boolean ChangeBitLength(int newBitLength)
+        {
+            return _generator.ChangeBitLength(newBitLength);
         }
         
         /// <summary>

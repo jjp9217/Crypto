@@ -18,7 +18,16 @@ namespace Crypto
     public class PrimeGen
     {
         // The number of bits that out prime number may take up. Must be greater than 32, and a multiple of 8.
-        private readonly int _bits;
+        private int _bits;
+        
+        //The minimum allowable bit length of our numbers.
+        private const int MinBitSize = 32;
+        
+        //Ensure that we are not currently working. If we are, do not change the bitlength.
+        //private bool _workingFlag;
+        //private const int WaitTime = 3000;
+        
+        
         
 
         // We have this to prevent scenarios where one thread has just caused the _count to be reached, but another
@@ -45,6 +54,22 @@ namespace Crypto
         public PrimeGen(int bits)
         {
             this._bits = bits;
+            //this._workingFlag = false;
+        }
+
+        public bool ChangeBitLength(int newBitLength)
+        {
+            // while (_workingFlag) //TODO do we need to worry about this?
+            // {
+            //     Thread.Sleep(WaitTime); //wait until work is done.
+            // }
+            //
+            if (newBitLength >= MinBitSize && newBitLength % 8 == 0)
+            {
+                this._bits = newBitLength;
+                return true;
+            }//else
+            return false;
         }
 
         /// <summary>
@@ -57,6 +82,7 @@ namespace Crypto
         /// <returns>void</returns>
         public List<BigInteger> GeneratePrimes(int count=1)
         {
+            
             List<BigInteger> primes = new List<BigInteger>();
             var gen = new RNGCryptoServiceProvider();
 
