@@ -56,6 +56,18 @@ namespace Crypto
 
         }
         
+        public void GetMsg(string email){}
+        
+        public void SendMsg(string email, string plaintext){}
+        
+        public void GetKey(string email){}
+        
+        public void SendKey(string email){}
+        
+        
+        
+        
+        
 
         public void ParseArguments(string[] args)
         {
