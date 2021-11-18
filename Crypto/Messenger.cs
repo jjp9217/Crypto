@@ -3,7 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Sockets;
 using System.Numerics;
+using System.Text.Json.Serialization;
 
 namespace Crypto
 {
@@ -18,9 +22,16 @@ namespace Crypto
         //The 'e' used in RSA. May be reused, and is small for performance.
         private const int E = 65537;
 
+        //Locations of webserver. This application requires a server to function beyond keygen.
+        private const string ServerUrl = "http://kayrun.cs.rit.edu:5000/";
+
+        private readonly HttpClient _client;
+
+
         public Messenger(int bitSize = DefaultBitSize)
         {
             this._generator = new PrimeGen(DefaultBitSize);
+            this._client = new HttpClient();
         }
 
         
@@ -30,8 +41,10 @@ namespace Crypto
             Messenger msgr = new Messenger();
             msgr.Rsa();
             
-            msgr.ParseArguments(args); //Send down execution path with string array
+            //msgr.ParseArguments(args); //Send down execution path with string array
 
+
+            msgr.GetKey("");
         }
         
         
@@ -59,8 +72,20 @@ namespace Crypto
         public void GetMsg(string email){}
         
         public void SendMsg(string email, string plaintext){}
-        
-        public void GetKey(string email){}
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="email"></param>
+        public async void GetKey(string email)
+        {
+            HttpResponseMessage response = await _client.GetAsync("http://kayrun.cs.rit.edu:5000/Key/jsb@cs.rit.edu");
+
+            var content = response.Content;
+            
+
+
+        }
         
         public void SendKey(string email){}
         
