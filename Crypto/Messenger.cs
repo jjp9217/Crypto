@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Numerics;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 
 namespace Crypto
@@ -46,7 +44,7 @@ namespace Crypto
             //msgr.ParseArguments(args); //Send down execution path with string array
 
 
-            msgr.GetKey("jsb@cs.rit.edu");
+            //msgr.GetKey("jsb@cs.rit.edu");
             msgr.KeyGen();
     
         }
@@ -72,10 +70,10 @@ namespace Crypto
             BigInteger[] values = Rsa();
             
             //make public key
-            KeyObj publicKey = ConstructPublicKey(E, values[2]);
+            KeyObj publicKey = ConstructKey(E, values[2]);
             
             
-
+            Console.WriteLine(publicKey.Key);
 
 
 
@@ -106,17 +104,41 @@ namespace Crypto
 
         }
 
-        private KeyObj ConstructPublicKey(BigInteger e, BigInteger n)
+        /// <summary>
+        /// This method takes in an element (E or D) and creates a key from it.
+        /// The element and nonce are presumed to be generated properly.
+        /// </summary>
+        /// <param name="el">The element to use. Either public E or secret D</param>
+        /// <param name="n">The nonce. Public.</param>
+        /// <returns>The constructed Key Object.</returns>
+        private KeyObj ConstructKey(BigInteger el, BigInteger n)
         {
            
-            var eBits = e.ToByteArray(); // This methods provides a LITTLE ENDIAN array, which is what we what.
+            var elBits = el.ToByteArray(); // This methods provides a LITTLE ENDIAN array, which is what we what.
             var nBits = n.ToByteArray(); // E and N are represented as LE, whereas their bytecounts e/n are BE.
             
             //Now, construct the bitcounts
+
+            var elLen = elBits.Length;
+            var nLen = nBits.Length;
             
+            //Now, construct the byte Array
+
+            byte[] key = new byte[4 + elLen + 4 + nLen];// 4 bytes for the size elements, and space for E and N
             
-        
-            return null;
+            //Turn eLen and nLen into bytes (already big endian)
+            byte[] eLenBytes = BitConverter.GetBytes(elLen);
+            byte[] nLenBytes = BitConverter.GetBytes(nLen);
+
+            // Populate the key Array
+            Array.Copy(eLenBytes,key,elLen);//add the length element at the start (0 to 4)
+            Array.Copy(elBits,0,key,4,elLen);
+            Array.Copy(nLenBytes,0,key,elLen+4,4);
+            Array.Copy(nBits,0,key,elLen+4+4,nLen);
+
+            //The key is ready to construct
+
+            return new KeyObj(null, key);//Email is left as null
         }
         
         public void GetMsg(string email){}
