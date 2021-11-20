@@ -6,6 +6,8 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Numerics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 
 namespace Crypto
@@ -16,15 +18,18 @@ namespace Crypto
         //used for generating p and q, they must sum to 1024 
         private const int DefaultBitSize = 1024;
         
-        private readonly PrimeGen _generator;
-        
         //The 'e' used in RSA. May be reused, and is small for performance.
         private const int E = 65537;
+        
+        //Avoid magic strings when possible.
+        private const string PrivateKeyName = "private.key";
+        private const string PublicKeyName = "public.key";
 
         //Locations of webserver. This application requires a server to function beyond keygen.
         private const string ServerUrl = "http://kayrun.cs.rit.edu:5000/";
 
         private readonly HttpClient _client;
+        private readonly PrimeGen _generator;
    
 
 
@@ -50,8 +55,6 @@ namespace Crypto
     
         }
         
-        
-
         /// <summary>
         /// 
         /// </summary>
@@ -77,8 +80,14 @@ namespace Crypto
             KeyObj privateKey = ConstructKey(values[1], values[2]);
             
             //Write both keys to file
-            
 
+            var pubString = JsonSerializer.Serialize(publicKey);
+            var prvString = JsonSerializer.Serialize(privateKey);
+            
+            File.WriteAllText(PrivateKeyName, prvString);
+            File.WriteAllText(PublicKeyName, pubString);
+            
+            Console.WriteLine("Successfully generated keys, and saved to file.");
         }
 
         /// <summary>
@@ -111,7 +120,7 @@ namespace Crypto
         /// The element and nonce are presumed to be generated properly.
         /// </summary>
         /// <param name="el">The element to use. Either public E or secret D</param>
-        /// <param name="n">The nonce. Public.</param>
+        /// <param name="n">The nonce.</param>
         /// <returns>The constructed Key Object.</returns>
         private KeyObj ConstructKey(BigInteger el, BigInteger n)
         {
@@ -133,7 +142,7 @@ namespace Crypto
             byte[] nLenBytes = BitConverter.GetBytes(nLen);
 
             // Populate the key Array
-            Array.Copy(eLenBytes,key,elLen);//add the length element at the start (0 to 4)
+            Array.Copy(eLenBytes,key,4);//add the length element at the start (0 to 4)
             Array.Copy(elBits,0,key,4,elLen);
             Array.Copy(nLenBytes,0,key,elLen+4,4);
             Array.Copy(nBits,0,key,elLen+4+4,nLen);
@@ -172,13 +181,21 @@ namespace Crypto
                             response.StatusCode);
                         break;
                 }
-
-                
             }
             
             string content = await response.Content.ReadAsStringAsync();
-            await File.WriteAllTextAsync(email, content);
+
+            try
+            {
+                JsonSerializer.Deserialize<KeyObj>(content);
+            }
+            catch (JsonException)
+            {
+                await Console.Error.WriteLineAsync("Error: The key received from the server is corrupted. Aborting operation.");
+                return; //Don't write a broken key
+            }
             
+            await File.WriteAllTextAsync(email, content);
         }
 
         public void SendKey(string email){}
