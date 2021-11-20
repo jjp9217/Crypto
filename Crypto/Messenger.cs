@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Numerics;
 
@@ -72,10 +73,11 @@ namespace Crypto
             //make public key
             KeyObj publicKey = ConstructKey(E, values[2]);
             
+            //make private key
+            KeyObj privateKey = ConstructKey(values[1], values[2]);
             
-            Console.WriteLine(publicKey.Key);
-
-
+            //Write both keys to file
+            
 
         }
 
@@ -138,7 +140,7 @@ namespace Crypto
 
             //The key is ready to construct
 
-            return new KeyObj(null, key);//Email is left as null
+            return new KeyObj(null, key);//Email is left as null initially
         }
         
         public void GetMsg(string email){}
@@ -158,8 +160,20 @@ namespace Crypto
 
             if (!response.IsSuccessStatusCode)
             {
-                Console.WriteLine("bruh"); //TODO add actual handling 4head
-                return;
+                switch (response.StatusCode)
+                {
+                    case HttpStatusCode.NotFound:
+                        Console.Error.WriteLine("Error: Server could not find a key associated with '{0}'",
+                            email);
+                        break;
+
+                    default:
+                        Console.Error.WriteLine("Error: Server returned error '{0}', key cannot be fetched.",
+                            response.StatusCode);
+                        break;
+                }
+
+                
             }
             
             string content = await response.Content.ReadAsStringAsync();
@@ -167,7 +181,6 @@ namespace Crypto
             
         }
 
-        
         public void SendKey(string email){}
         
         
@@ -189,7 +202,6 @@ namespace Crypto
                     if (args.Length != 2)
                     {
                         Console.Error.WriteLine("Error: <keygen> requires an argument <keySize>");
-                        return;
                     }
                     else KeyGen(Convert.ToInt32(args[1]));
                   
@@ -198,6 +210,10 @@ namespace Crypto
                 case "sendKey":
                     break;
                 case "getKey":
+                    if (args.Length != 2)
+                    {
+                        Console.Error.WriteLine("Error: <getKey> requires an argument <email>");
+                    }
                     break;
                 case "sendMsg":
                     break;
@@ -209,7 +225,7 @@ namespace Crypto
                     Environment.Exit(-1);//exit
                     break;//please the compiler
             }
-        }//TODO
+        }
         
         
         
@@ -288,9 +304,9 @@ namespace Crypto
         /// </summary>
         private static void PrintHelp(){
             Console.WriteLine("Usage: dotnet run <option> <option-specific args>");
-            Console.WriteLine("<keygen>: \t ");
+            Console.WriteLine("<keyGen>: <keySize>\t ");
             Console.WriteLine("<sendKey>: \t");
-            Console.WriteLine("<getKey>: \t");
+            Console.WriteLine("<getKey>: <email>\t");
             Console.WriteLine("<sendMsg>: \t");
             Console.WriteLine("<getMsg>: \t");
         }
