@@ -2,12 +2,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+using System.IO;
 using System.Net.Http;
-using System.Net.Sockets;
 using System.Numerics;
-using System.Text.Json.Serialization;
+using System.Text.Json;
+using System.Threading.Tasks;
+
 
 namespace Crypto
 {
@@ -26,12 +26,14 @@ namespace Crypto
         private const string ServerUrl = "http://kayrun.cs.rit.edu:5000/";
 
         private readonly HttpClient _client;
+   
 
 
         public Messenger(int bitSize = DefaultBitSize)
         {
             this._generator = new PrimeGen(DefaultBitSize);
             this._client = new HttpClient();
+     
         }
 
         
@@ -39,12 +41,13 @@ namespace Crypto
         public static void Main(string[] args)
         {
             Messenger msgr = new Messenger();
-            msgr.Rsa();
+           
             
             //msgr.ParseArguments(args); //Send down execution path with string array
 
 
-            msgr.GetKey("");
+            msgr.GetKey("jsb@cs.rit.edu");
+    
         }
         
         
@@ -74,18 +77,31 @@ namespace Crypto
         public void SendMsg(string email, string plaintext){}
 
         /// <summary>
-        /// TODO
+        /// This method will retrieve a PUBLIC key from the message server.
+        /// If successful in fetching, it will write the key to the filesystem where this project is executed.
+        /// If the fetched key already exists, it will be overwritten.
         /// </summary>
-        /// <param name="email"></param>
+        /// <param name="email">The email of the user who we want to fetch a public key from</param>
         public async void GetKey(string email)
         {
-            HttpResponseMessage response = await _client.GetAsync("http://kayrun.cs.rit.edu:5000/Key/jsb@cs.rit.edu");
+            var request =  _client.GetAsync(ServerUrl + "Key/" + email);
+            var response = request.Result;
 
-            var content = response.Content;
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("bruh");
+                return;
+            }
             
-
-
+            string content = await response.Content.ReadAsStringAsync();
+            
+            
+            //TODO ERROR VALIDATION
+            
+            await File.WriteAllTextAsync(email, content);
+            
         }
+
         
         public void SendKey(string email){}
         
