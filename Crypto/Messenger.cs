@@ -47,6 +47,7 @@ namespace Crypto
 
 
             msgr.GetKey("jsb@cs.rit.edu");
+            msgr.KeyGen();
     
         }
         
@@ -68,8 +69,54 @@ namespace Crypto
                 }
             }
                 
-            Rsa();
+            BigInteger[] values = Rsa();
+            
+            //make public key
+            KeyObj publicKey = ConstructPublicKey(E, values[2]);
+            
+            
 
+
+
+
+        }
+
+        /// <summary>
+        /// Use RSA to generate the components for the keys.
+        /// The public key will use values E and N, and the private key will use values d and n.
+        /// </summary>
+        /// <returns>Array of [E,d,n]</returns>
+        private BigInteger[] Rsa()
+        {
+            //first use PrimeGen to generate large numbers for P and Q
+            List<BigInteger> primes = _generator.GeneratePrimes(2);
+
+            var p = primes[0];
+            var q = primes[1];
+            var n = BigInteger.Multiply(p, q);
+
+            var pMinusOne = BigInteger.Subtract(p, BigInteger.One);
+            var qMinusOne = BigInteger.Subtract(q, BigInteger.One);
+            var r = BigInteger.Multiply(pMinusOne, qMinusOne);
+
+            var d = ModInverse(E, r); //using constant E
+
+            BigInteger[] vals = {E,d,n};
+            return vals;
+
+        }
+
+        private KeyObj ConstructPublicKey(BigInteger e, BigInteger n)
+        {
+           
+            var eBits = e.ToByteArray(); // This methods provides a LITTLE ENDIAN array, which is what we what.
+            var nBits = n.ToByteArray(); // E and N are represented as LE, whereas their bytecounts e/n are BE.
+            
+            //Now, construct the bitcounts
+            
+            
+        
+            return null;
         }
         
         public void GetMsg(string email){}
@@ -89,15 +136,11 @@ namespace Crypto
 
             if (!response.IsSuccessStatusCode)
             {
-                Console.WriteLine("bruh");
+                Console.WriteLine("bruh"); //TODO add actual handling 4head
                 return;
             }
             
             string content = await response.Content.ReadAsStringAsync();
-            
-            
-            //TODO ERROR VALIDATION
-            
             await File.WriteAllTextAsync(email, content);
             
         }
@@ -165,28 +208,7 @@ namespace Crypto
         
         
 
-        /// <summary>
-        /// Use RSA to generate a set of keys.
-        /// </summary>
-        private void Rsa()
-        {
-            //first use PrimeGen to generate large numbers for P and Q
-            List<BigInteger> primes = _generator.GeneratePrimes(2);
-
-            var p = primes[0];
-            var q = primes[1];
-            var n = BigInteger.Multiply(p, q);
-
-            var pMinusOne = BigInteger.Subtract(p, BigInteger.One);
-            var qMinusOne = BigInteger.Subtract(q, BigInteger.One);
-            var r = BigInteger.Multiply(pMinusOne, qMinusOne);
-
-            var d = ModInverse(E, r); //using constant E
-            
-            //TODO figure out how to store these numbers, as a field or as return vals
-
-
-        }
+       
         
         
         
