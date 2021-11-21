@@ -53,10 +53,6 @@ namespace Crypto
         public static void Main(string[] args)
         {
             Messenger msgr = new Messenger();
-
-          
-            
-            
             //msgr.ParseArguments(args); //Send down execution path with string array
 
             //
@@ -64,6 +60,8 @@ namespace Crypto
             // msgr.SendKey("jjp9217@cs.rit.edu");
             // msgr.GetKey("jjp9217@cs.rit.edu");
             //
+            
+            msgr.SendMsg("jjp9217@cs.rit.edu","bababoi");
             
     
         }
@@ -250,6 +248,9 @@ namespace Crypto
                 //then, use ModPow to turn the message into ciphertext
                 
                 //TODO
+                
+                
+                
             }
             catch (FileNotFoundException)
             {
@@ -257,9 +258,6 @@ namespace Crypto
                                         "a message may be sent to them.",email);
                 return;
             }
-            
-            
-            
         }
 
         /// <summary>
@@ -321,7 +319,7 @@ namespace Crypto
                 KeyObj pubKey = JsonSerializer.Deserialize<KeyObj>(strKey);
                 if (pubKey != null)
                 {
-                    pubKey.Email = email;
+                    pubKey.email = email;
                     
                     //next, push the key to server
                     strKey = JsonSerializer.Serialize(pubKey);
