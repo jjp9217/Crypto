@@ -5,9 +5,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 
 namespace Crypto
@@ -48,7 +50,7 @@ namespace Crypto
 
             //msgr.GetKey("jsb@cs.rit.edu");
             //msgr.KeyGen();
-            msgr.SendKey();
+            msgr.SendKey("jjp@cs.rit.edu");
     
         }
         
@@ -63,7 +65,7 @@ namespace Crypto
                 if (!ChangeBitLength(keySize))//ensure that transition is smooth
                 {
                     Console.Error.WriteLine("Error: <keySize> must be greater than or equal to 32," +
-                                            "and a multiple of 8.");//it was not, halt program
+                                            "and a multiple of 8.");//it was not, so halt execution
                     Environment.Exit(-1);
                 }
             }
@@ -198,17 +200,39 @@ namespace Crypto
         /// <summary>
         /// This method will push the public key to the server. 
         /// </summary>
-        public void SendKey()
+        public void SendKey(string email)
         {
             //first, see if the public key exists
             try
             {
-                string pubKey = File.ReadAllText(PublicKeyName);
-                //next, push the key to server
+                string strKey = File.ReadAllText(PublicKeyName);
                 
-                //TODO PUSH
-                
-                //finally, check the return code to sure nothing went wrong
+                //next add the email to the pubkey
+
+                KeyObj pubKey = JsonSerializer.Deserialize<KeyObj>(strKey);
+                if (pubKey != null)
+                {
+                    pubKey.Email = email;
+                    
+                    //next, push the key to server
+                    strKey = JsonSerializer.Serialize(pubKey);
+                    JsonContent keyContent = JsonContent.Create(strKey);
+
+                    var putRequest = _client.PutAsync(ServerUrl, keyContent);
+                    var response = putRequest.Result;
+                    
+                    //next, check the return code to sure nothing went wrong
+                    
+                    //TODO check
+
+                    //finally, add the email string to the private key so we know whose public key it matches
+                }
+                else
+                {
+                    Console.Error.WriteLine("Error: The public key in the directory this project was " +
+                                            "executed in cannot be parsed, check the key for corruption.");
+                }
+               
             }
             catch (FileNotFoundException)
             {
