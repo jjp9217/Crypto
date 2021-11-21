@@ -24,11 +24,13 @@ namespace Crypto
         //Avoid magic strings when possible.
         private const string PrivateKeyName = "private.key";
         private const string PublicKeyName = "public.key";
+        private const String KeyFileExtension = ".key";
 
         //Locations of webserver and URL options. This application requires a server to function beyond keygen.
         private const string ServerUrl = "http://kayrun.cs.rit.edu:5000/";
         private const string KeyExtension = "Key/";
         private const String MsgExtension = "Message/";
+        
         
 
         private readonly HttpClient _client;
@@ -48,11 +50,12 @@ namespace Crypto
             
             //msgr.ParseArguments(args); //Send down execution path with string array
 
-
-            //msgr.GetKey("jsb@cs.rit.edu");
+            
             //msgr.KeyGen();
-            msgr.SendKey("jjp9217@cs.rit.edu");
-            msgr.GetKey("jjp9217@cs.rit.edu");
+            //msgr.SendKey("jjp9217@cs.rit.edu");
+            //msgr.GetKey("jjp9217@cs.rit.edu");
+            
+            
     
         }
         
@@ -152,10 +155,69 @@ namespace Crypto
 
             return new KeyObj(null, key);//Email is left as null initially
         }
+
+        /// <summary>
+        /// The inverse operator of Rsa(). Will take in a formed key (as byte[]), and return it's element and nonce.
+        /// </summary>
+        /// <param name="key">The key to extract the element and nonce from. Must be in byte-array form.</param>
+        /// <returns>The element and nonce in form [el,N]</returns>
+        private byte[] ExtractKey(byte[] key)
+        {
+            byte[] vals = new byte[2];
+            
+            
+            //TODO
+            
+            
+            return vals;
+        }
         
         public void GetMsg(string email){}
-        
-        public void SendMsg(string email, string plaintext){}
+
+        /// <summary>
+        /// Encrypt a message with a public key, and send it to the server.
+        /// </summary>
+        /// <param name="email"></param>
+        /// <param name="plaintext"></param>
+        public void SendMsg(string email, string plaintext)
+        {
+            //first, ensure we have a key matching this email
+            try
+            {
+                string pubStr = File.ReadAllText(email + KeyFileExtension);
+                
+                //next, construct it into an object
+
+                KeyObj key = JsonSerializer.Deserialize<KeyObj>(pubStr);
+
+                if (key == null)
+                {
+                    Console.Error.WriteLine("Error: The public key for '{0}' cannot be verified as a KeyObj.", email);
+                    return;
+                }
+                
+                //next, get the b64 string and turn it into a byte array
+
+                byte[] trueKey = key.GetKeyAsBytes();
+                
+                //next we need to perform an encoding. strip out E and N from the byte array
+
+                byte[] values = ExtractKey(trueKey);
+                
+                //then, use ModPow to turn the message into ciphertext
+                
+                //TODO
+            }
+            catch (FileNotFoundException)
+            {
+                Console.Error.WriteLine("Error: The public key for '{0}' does not exist. It must be fetched before" +
+                                        "a message may be sent to them.",email);
+                return;
+            }
+            
+            
+            
+        }
 
         /// <summary>
         /// This method will retrieve a PUBLIC key from the message server.
@@ -193,11 +255,12 @@ namespace Crypto
             }//TODO make sure the email is not null, if it is then fill it with the spec'd email???
             catch (JsonException)
             {
-                await Console.Error.WriteLineAsync("Error: The key received from the server is corrupted. Aborting operation.");
+                await Console.Error.WriteLineAsync("Error: The key received from the server is is not a valid key. " +
+                                                   "Aborting operation.");
                 return; //Don't write a broken key
             }
             
-            await File.WriteAllTextAsync(email, content); //report nothing to console if sucessful
+            await File.WriteAllTextAsync(email + KeyFileExtension, content); //report nothing to console if sucessful
         }
 
         /// <summary>
@@ -233,7 +296,7 @@ namespace Crypto
                             Console.Error.WriteLine("Error: URL not found, 404. URL may have changed. Recompile " +
                                                     "with correct server URL.");
                             break;
-                        case HttpStatusCode.OK:
+                        case HttpStatusCode.OK://success cases
                             Console.WriteLine("Key saved");
                             break;
                         case HttpStatusCode.NoContent:
@@ -246,6 +309,7 @@ namespace Crypto
 
                     //finally, add the email string to the private key so we know whose public key it matches
                 }
+                
                 else
                 {
                     Console.Error.WriteLine("Error: The public key in the directory this project was " +
@@ -349,7 +413,7 @@ namespace Crypto
         /// A method for finding the modular inverse of a BigInteger.
         /// </summary>
         /// <param name="a">The BigInteger to find the modInverse of.</param>
-        /// <param name="r">The TODO </param>
+        /// <param name="r">Exponent?</param>
         /// <returns>The modular inverse of a and r</returns>
         private BigInteger ModInverse(BigInteger a, BigInteger r)
         {
