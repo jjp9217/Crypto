@@ -30,8 +30,6 @@ namespace Crypto
 
         private readonly HttpClient _client;
         private readonly PrimeGen _generator;
-   
-
 
         public Messenger(int bitSize = DefaultBitSize)
         {
@@ -39,9 +37,7 @@ namespace Crypto
             this._client = new HttpClient();
      
         }
-
         
-
         public static void Main(string[] args)
         {
             Messenger msgr = new Messenger();
@@ -51,7 +47,8 @@ namespace Crypto
 
 
             //msgr.GetKey("jsb@cs.rit.edu");
-            msgr.KeyGen();
+            //msgr.KeyGen();
+            msgr.SendKey();
     
         }
         
@@ -198,7 +195,28 @@ namespace Crypto
             await File.WriteAllTextAsync(email, content);
         }
 
-        public void SendKey(string email){}
+        /// <summary>
+        /// This method will push the public key to the server. 
+        /// </summary>
+        public void SendKey()
+        {
+            //first, see if the public key exists
+            try
+            {
+                string pubKey = File.ReadAllText(PublicKeyName);
+                //next, push the key to server
+                
+                //TODO PUSH
+                
+                //finally, check the return code to sure nothing went wrong
+            }
+            catch (FileNotFoundException)
+            {
+                Console.Error.WriteLine("Error: {0} does not exist in the directory this project was executed in.",
+                    PublicKeyName);
+            }
+            
+        }
         
         
         
