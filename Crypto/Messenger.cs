@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -12,7 +13,10 @@ using System.Text.Json;
 
 namespace Crypto
 {
-  
+    /// <summary>
+    /// A basic messenger service. Generates an RSA keypair, and sends over HTTP to a partner server.
+    /// This program presumes that the architecture of the running computer is Big Endian.
+    /// </summary>
     public class Messenger
     {
         //used for generating p and q, they must sum to 1024 
@@ -20,6 +24,9 @@ namespace Crypto
         
         //The 'e' used in RSA. May be reused, and is small for performance.
         private const int E = 65537;
+        
+        //This constant governs how many bytes we store for the size indicator of el/Nonce, MUST BE 4 -> 32 bit int
+        private const int AllocatedBytes = 4;
         
         //Avoid magic strings when possible.
         private const string PrivateKeyName = "private.key";
@@ -46,15 +53,17 @@ namespace Crypto
         public static void Main(string[] args)
         {
             Messenger msgr = new Messenger();
-           
+
+          
+            
             
             //msgr.ParseArguments(args); //Send down execution path with string array
 
-            
-            //msgr.KeyGen();
-            //msgr.SendKey("jjp9217@cs.rit.edu");
-            //msgr.GetKey("jjp9217@cs.rit.edu");
-            
+            //
+            // msgr.KeyGen();
+            // msgr.SendKey("jjp9217@cs.rit.edu");
+            // msgr.GetKey("jjp9217@cs.rit.edu");
+            //
             
     
         }
@@ -139,17 +148,22 @@ namespace Crypto
             
             //Now, construct the byte Array
 
-            byte[] key = new byte[4 + elLen + 4 + nLen];// 4 bytes for the size elements, and space for E and N
+            byte[] key = new byte[AllocatedBytes + elLen + AllocatedBytes + nLen];
+            // 4 bytes for the size elements, and space for E and N
             
-            //Turn eLen and nLen into bytes (already big endian)
+            //Turn eLen and nLen into bytes 
             byte[] eLenBytes = BitConverter.GetBytes(elLen);
             byte[] nLenBytes = BitConverter.GetBytes(nLen);
+            
+            //Turn the arrays into Big Endian form (x86 is little endian)
+            Array.Reverse(eLenBytes);
+            Array.Reverse(nLenBytes);
 
             // Populate the key Array
-            Array.Copy(eLenBytes,key,4);//add the length element at the start (0 to 4)
-            Array.Copy(elBits,0,key,4,elLen);
-            Array.Copy(nLenBytes,0,key,elLen+4,4);
-            Array.Copy(nBits,0,key,elLen+4+4,nLen);
+            Array.Copy(eLenBytes,key,AllocatedBytes);//add the length element at the start (0 to 4)
+            Array.Copy(elBits,0,key,AllocatedBytes,elLen);
+            Array.Copy(nLenBytes,0,key,elLen+AllocatedBytes,AllocatedBytes);
+            Array.Copy(nBits,0,key,elLen+AllocatedBytes+AllocatedBytes,nLen);
 
             //The key is ready to construct
 
@@ -161,13 +175,42 @@ namespace Crypto
         /// </summary>
         /// <param name="key">The key to extract the element and nonce from. Must be in byte-array form.</param>
         /// <returns>The element and nonce in form [el,N]</returns>
-        private byte[] ExtractKey(byte[] key)
+        private BigInteger[] ExtractKey(byte[] key)
         {
-            byte[] vals = new byte[2];
+            BigInteger[] vals = new BigInteger[2];
             
             
-            //TODO
+            //first, read the first number of bytes to know the size of the next element
+            byte[] elLengthBytes = new byte[AllocatedBytes];
             
+            Array.Copy(key, elLengthBytes, AllocatedBytes);
+            
+            Array.Reverse(elLengthBytes); //We must convert it to Little Endian for it to work on x86
+
+            int elLen = BitConverter.ToInt32(elLengthBytes, 0); //interprets as LE
+            
+            //now we know the length of the element, so rip it out of the array
+
+            byte[] el = new byte[elLen]; 
+            
+            Array.Copy(key, AllocatedBytes, el,0,elLen);
+
+            vals[0] = new BigInteger(el);
+
+            //and do the same for Nonce
+
+            byte[] nLenB = new byte[AllocatedBytes];
+            
+            Array.Copy(key, elLen + AllocatedBytes, 
+                nLenB, 0, AllocatedBytes);
+
+            int nLen = BitConverter.ToInt32(nLenB, 0);
+
+            byte[] n = new byte[nLen];
+            
+            Array.Copy(key, elLen + AllocatedBytes + AllocatedBytes, n, 0, nLen);
+
+            vals[1] = new BigInteger(n);
             
             return vals;
         }
@@ -202,7 +245,7 @@ namespace Crypto
                 
                 //next we need to perform an encoding. strip out E and N from the byte array
 
-                byte[] values = ExtractKey(trueKey);
+                BigInteger[] values = ExtractKey(trueKey);
                 
                 //then, use ModPow to turn the message into ciphertext
                 
