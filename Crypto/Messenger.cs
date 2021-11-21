@@ -5,11 +5,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Numerics;
+using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 
 namespace Crypto
@@ -27,8 +25,11 @@ namespace Crypto
         private const string PrivateKeyName = "private.key";
         private const string PublicKeyName = "public.key";
 
-        //Locations of webserver. This application requires a server to function beyond keygen.
+        //Locations of webserver and URL options. This application requires a server to function beyond keygen.
         private const string ServerUrl = "http://kayrun.cs.rit.edu:5000/";
+        private const string KeyExtension = "Key/";
+        private const String MsgExtension = "Message/";
+        
 
         private readonly HttpClient _client;
         private readonly PrimeGen _generator;
@@ -50,7 +51,8 @@ namespace Crypto
 
             //msgr.GetKey("jsb@cs.rit.edu");
             //msgr.KeyGen();
-            msgr.SendKey("jjp@cs.rit.edu");
+            msgr.SendKey("jjp9217@cs.rit.edu");
+            msgr.GetKey("jjp9217@cs.rit.edu");
     
         }
         
@@ -163,7 +165,8 @@ namespace Crypto
         /// <param name="email">The email of the user who we want to fetch a public key from</param>
         public async void GetKey(string email)
         {
-            var request =  _client.GetAsync(ServerUrl + "Key/" + email);
+            var sendTo = ServerUrl + KeyExtension + email;
+            var request =  _client.GetAsync(sendTo);
             var response = request.Result;
 
             if (!response.IsSuccessStatusCode)
@@ -187,14 +190,14 @@ namespace Crypto
             try
             {
                 JsonSerializer.Deserialize<KeyObj>(content);
-            }
+            }//TODO make sure the email is not null, if it is then fill it with the spec'd email???
             catch (JsonException)
             {
                 await Console.Error.WriteLineAsync("Error: The key received from the server is corrupted. Aborting operation.");
                 return; //Don't write a broken key
             }
             
-            await File.WriteAllTextAsync(email, content);
+            await File.WriteAllTextAsync(email, content); //report nothing to console if sucessful
         }
 
         /// <summary>
@@ -216,14 +219,30 @@ namespace Crypto
                     
                     //next, push the key to server
                     strKey = JsonSerializer.Serialize(pubKey);
-                    JsonContent keyContent = JsonContent.Create(strKey);
+                    var keyContent = new StringContent(strKey, Encoding.UTF8, "application/json");  
 
-                    var putRequest = _client.PutAsync(ServerUrl, keyContent);
-                    var response = putRequest.Result;
+                    var sendTo = ServerUrl + KeyExtension + email;
+                    var putRequest = _client.PutAsync(sendTo, keyContent);
+                    HttpResponseMessage response = putRequest.Result;
                     
                     //next, check the return code to sure nothing went wrong
-                    
-                    //TODO check
+
+                    switch (response.StatusCode)
+                    {
+                        case HttpStatusCode.NotFound:
+                            Console.Error.WriteLine("Error: URL not found, 404. URL may have changed. Recompile " +
+                                                    "with correct server URL.");
+                            break;
+                        case HttpStatusCode.OK:
+                            Console.WriteLine("Key saved");
+                            break;
+                        case HttpStatusCode.NoContent:
+                            Console.WriteLine("Key saved");
+                            break;
+                        default:
+                            Console.WriteLine("Received unexpected response: " + response.StatusCode);
+                            break;
+                    }
 
                     //finally, add the email string to the private key so we know whose public key it matches
                 }
