@@ -55,12 +55,14 @@ namespace Crypto
             //msgr.ParseArguments(args); //Send down execution path with string array
 
             
-            msgr.KeyGen();
-            msgr.SendKey("jjp9217@cs.rit.edu");
-            msgr.GetKey("jjp9217@cs.rit.edu");
-            
-            
+            //msgr.KeyGen();
+            // msgr.SendKey("jjp9217@cs.rit.edu");
+            // msgr.GetKey("jjp9217@cs.rit.edu");
+            //
+            //
             msgr.SendMsg("jjp9217@cs.rit.edu","bababoi");
+            
+            msgr.GetMsg("jjp9217@cs.rit.edu");
             
     
         }
@@ -211,8 +213,128 @@ namespace Crypto
             
             return vals;
         }
-        
-        public void GetMsg(string email){}
+
+        /// <summary>
+        /// Get a message from the server from the user provided in the email argument. We must already possess this
+        /// user's private key in order to decrypt and read the message.
+        /// </summary>
+        /// <param name="email">The email of the user whose ciphered message we are fetching</param>
+        public void GetMsg(string email)
+        {
+            // First, see if this user's private key exists
+            try
+            {
+                string strKey = File.ReadAllText(PrivateKeyName);
+                //Next make sure the email appears in the private key (it was written by us!)
+
+                KeyObj pvtKey = JsonSerializer.Deserialize<KeyObj>(strKey);
+                if (pvtKey == null)
+                {
+                    Console.Error.WriteLine("Error: Private key is null, check for corruption.");
+                    return;
+                }
+
+                if (!pvtKey.email.Contains(email))
+                {
+                    Console.Error.WriteLine("Error: This private key does not correspond to the email '{0}'",
+                        email);
+                    return;
+                }//else, we can proceed!
+                //fetch the message from the server
+                var sendTo = ServerUrl + MsgExtension + email;
+                
+                var request =  _client.GetAsync(sendTo);
+                var response = request.Result;
+                
+                if (!response.IsSuccessStatusCode) // Inform user of fetch failure if required
+                {
+                    switch (response.StatusCode)
+                    {
+                        case HttpStatusCode.NotFound:
+                            Console.Error.WriteLine("Error: Server could not find a message associated with '{0}'",
+                                email);
+                            break;
+
+                        default:
+                            Console.Error.WriteLine("Error: Server returned error '{0}', message cannot be fetched.",
+                                response.StatusCode);
+                            break;
+                    }
+                    return;
+                }//else, we have the message! 
+                
+                var contentTask = response.Content.ReadAsStringAsync();
+                var content = contentTask.Result;
+
+                try
+                {
+                    Message msg = JsonSerializer.Deserialize<Message>(content);
+                    // We have an intact message, now get the ciphertext out
+
+                    if (msg == null)
+                    { 
+                        Console.Error.WriteLine("Error occured when trying to process JSON, the message was corrupted.");
+                        return;
+                    }
+                    
+                    var ciphertext = msg.content;
+
+                    if (ciphertext == null) //Verify...
+                    {
+                        Console.Error.WriteLine("Error: The message content is null, the message is corrupted.");
+                        return;
+                    }
+                    
+                    // Turn into a byte array
+                    var cipherAsBytes = Convert.FromBase64String(ciphertext);
+                    
+                    // Turn into a number
+                    var cipherAsBigInt = new BigInteger(cipherAsBytes);
+                    
+                    // Now, ready the key.
+
+                    byte[] trueKey = pvtKey.GetKeyAsBytes();
+                    BigInteger[] values = ExtractKey(trueKey);
+                    var d = values[0];
+                    var n = values[1];
+                    
+                    if (cipherAsBytes.Length >= values[2] + values[3]) // No messages longer than the key allowed
+                    {
+                        Console.Error.WriteLine("Error: The length of the received ciphertext (len = {0}) exceeds the keySize {1}." +
+                                                "\n The ciphertext cannot be decrypted.",
+                            cipherAsBytes.Length, (values[2] + values[3]));
+                        return; //exit
+                    }
+                    
+                    // Crack it.
+                    var plainAsBigInt = BigInteger.ModPow(d, n, cipherAsBigInt);
+                    
+                    // Turn it into bytes...
+                    var plainAsBytes = plainAsBigInt.ToByteArray();
+                    
+                    // ... and turn it into plaintext
+
+                    var plaintext = Encoding.UTF8.GetString(plainAsBytes);
+                    
+                    Console.WriteLine(plaintext); // Right as rain.
+                }
+                catch (JsonException)
+                {
+                    Console.Error.WriteLine("Error occured when trying to process JSON, the message was corrupted.");
+
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                Console.Error.WriteLine("Error: {0} does not exist in the directory this project was executed in.",
+                    PrivateKeyName);
+            }
+            catch (JsonException)
+            {
+                Console.Error.WriteLine("Error occured when trying to process JSON, the key was corrupted.");
+            }
+            
+        }
 
         /// <summary>
         /// Encrypt a message with a public key, and send it to the server.
@@ -336,7 +458,7 @@ namespace Crypto
             try
             {
                 JsonSerializer.Deserialize<KeyObj>(content);
-            }//TODO make sure the email is not null, if it is then fill it with the spec'd email???
+            }
             catch (JsonException)
             {
                 await Console.Error.WriteLineAsync("Error: The key received from the server is is not a valid key. " +
@@ -344,7 +466,7 @@ namespace Crypto
                 return; //Don't write a broken key
             }
             
-            await File.WriteAllTextAsync(email + KeyFileExtension, content); //report nothing to console if sucessful
+            await File.WriteAllTextAsync(email + KeyFileExtension, content); 
         }
 
         /// <summary>
@@ -405,7 +527,7 @@ namespace Crypto
                 else
                 {
                     Console.Error.WriteLine("Error: The public key in the directory this project was " +
-                                            "executed in cannot be parsed, check the key for corruption.");
+                                            " executed in cannot be parsed, check the key for corruption.");
                 }
                
             }
@@ -417,11 +539,6 @@ namespace Crypto
             
         }
         
-        
-        
-        
-        
-
         public void ParseArguments(string[] args)
         {
             if (args.Length == 0)
@@ -438,20 +555,35 @@ namespace Crypto
                         Console.Error.WriteLine("Error: <keygen> requires an argument <keySize>");
                     }
                     else KeyGen(Convert.ToInt32(args[1]));
-                  
                     break;
                 
                 case "sendKey":
+                    if (args.Length != 2)
+                    {
+                        Console.Error.WriteLine("Error: <sendKey> requires an argument <email>");
+                    }
+                    else SendKey(args[1]);
                     break;
                 case "getKey":
                     if (args.Length != 2)
                     {
                         Console.Error.WriteLine("Error: <getKey> requires an argument <email>");
                     }
+                    else GetKey(args[1]);
                     break;
                 case "sendMsg":
+                    if (args.Length != 3)
+                    {
+                        Console.Error.WriteLine("Error: <sendMsg> requires arguments <email> and <message>");
+                    }
+                    else SendMsg(args[1],args[2]);
                     break;
                 case "getMsg":
+                    if (args.Length != 2)
+                    {
+                        Console.Error.WriteLine("Error: <getMsg> requires an argument <email>");
+                    }
+                    else GetMsg(args[1]);
                     break;
                 default:
                     Console.Error.WriteLine("Error: unrecognized argument {0}", args[0]);
