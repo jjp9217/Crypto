@@ -51,17 +51,17 @@ namespace Crypto
         public static void Main(string[] args)
         {
             Messenger msgr = new Messenger();
-            msgr.ParseArguments(args); //Send down execution path with string array
+            //msgr.ParseArguments(args); //Send down execution path with string array
             //
             //
-            // //msgr.KeyGen();
-            // // msgr.SendKey("jjp9217@cs.rit.edu");
-            // // msgr.GetKey("jjp9217@cs.rit.edu");
-            // //
-            // //
-            // msgr.SendMsg("jjp9217@cs.rit.edu","plaintext");
-            //
-            // msgr.GetMsg("jjp9217@cs.rit.edu");
+           // msgr.KeyGen();
+             msgr.SendKey("jjp9217@cs.rit.edu");
+             msgr.GetKey("jjp9217@cs.rit.edu");
+            
+            
+            msgr.SendMsg("jjp9217@cs.rit.edu","plaintext");
+            
+            msgr.GetMsg("jjp9217@cs.rit.edu");
             //
     
         }
@@ -88,7 +88,7 @@ namespace Crypto
             KeyObj publicKey = ConstructKey(E, values[2]);
             
             //make private key
-            KeyObj privateKey = ConstructKey(values[1], values[2]);
+            PrivateKeyObj privateKey = PrivateKeyObj.ConvertToPrivateKeyObj(ConstructKey(values[1], values[2]));
             
             //Write both keys to file
 
@@ -226,14 +226,14 @@ namespace Crypto
                 string strKey = File.ReadAllText(PrivateKeyName);
                 //Next make sure the email appears in the private key (it was written by us!)
 
-                KeyObj pvtKey = JsonSerializer.Deserialize<KeyObj>(strKey);
+                PrivateKeyObj pvtKey = JsonSerializer.Deserialize<PrivateKeyObj>(strKey);
                 if (pvtKey == null)
                 {
                     Console.Error.WriteLine("Error: Private key is null, check for corruption.");
                     return;
                 }
 
-                if (!pvtKey.email.Contains(email))
+                if (!pvtKey.emailList.Contains(email))
                 {
                     Console.Error.WriteLine("Error: This private key does not correspond to the email '{0}'",
                         email);
@@ -338,8 +338,8 @@ namespace Crypto
         /// <summary>
         /// Encrypt a message with a public key, and send it to the server.
         /// </summary>
-        /// <param name="email"></param>
-        /// <param name="plaintext"></param>
+        /// <param name="email">Email of message sender</param>
+        /// <param name="plaintext">Plaintext to send</param>
         public void SendMsg(string email, string plaintext)
         {
             //first, ensure we have a key matching this email
@@ -513,10 +513,10 @@ namespace Crypto
 
                     //finally, add the email string to the private key so we know whose public key it matches
                     strKey = File.ReadAllText(PrivateKeyName);
-                    KeyObj pvtKey = JsonSerializer.Deserialize<KeyObj>(strKey);
+                    var pvtKey = JsonSerializer.Deserialize<PrivateKeyObj>(strKey);
                     if (pvtKey != null)
                     {
-                        pvtKey.email = email; //TODO turn this into a list (why do we need that?)
+                        pvtKey.emailList.Add(email);
                     }
 
                     var outStr = JsonSerializer.Serialize(pvtKey);
@@ -544,6 +544,7 @@ namespace Crypto
             {
                 Console.Error.WriteLine("Error: Arguments must be provided.");
                 PrintHelp();
+                return;
             }
             switch (args[0])
             {
@@ -600,47 +601,7 @@ namespace Crypto
                     break;//please the compiler
             }
         }
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-
-       
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-
+   
         /// <summary>
         /// A method for finding the modular inverse of a BigInteger.
         /// </summary>
@@ -674,15 +635,15 @@ namespace Crypto
         }
         
         /// <summary>
-        /// Print a help message. TODO customize msg
+        /// Print a help message. 
         /// </summary>
         private static void PrintHelp(){
             Console.WriteLine("Usage: dotnet run <option> <option-specific args>");
             Console.WriteLine("<keyGen>: <keySize>\t ");
-            Console.WriteLine("<sendKey>: \t");
             Console.WriteLine("<getKey>: <email>\t");
-            Console.WriteLine("<sendMsg>: \t");
-            Console.WriteLine("<getMsg>: \t");
+            Console.WriteLine("<sendKey>: <email>\t");
+            Console.WriteLine("<sendMsg>: <email> <plaintext> \t");
+            Console.WriteLine("<getMsg>: <email>\t");
         }
     }
 }
