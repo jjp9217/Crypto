@@ -55,13 +55,13 @@ namespace Crypto
             //
             //
            // msgr.KeyGen();
-             // msgr.SendKey("jjp9217@cs.rit.edu");
-             // msgr.GetKey("jjp9217@cs.rit.edu");
-             //
-             //
+             msgr.SendKey("jjp9217@cs.rit.edu");
+             msgr.GetKey("jjp9217@cs.rit.edu");
+            
+            
             msgr.SendMsg("jjp9217@cs.rit.edu","plaintext");
             
-            // msgr.GetMsg("jjp9217@cs.rit.edu");
+            msgr.GetMsg("jjp9217@cs.rit.edu");
             //
     
         }
@@ -383,13 +383,12 @@ namespace Crypto
                 
                 // Do it
                 BigInteger ciphered = BigInteger.ModPow(e, n, plainAsBigInt);
-
+                
                 //Turn to bytes...
                 byte[] cipherAsBytes = ciphered.ToByteArray();
                 
                 //... and base64 encode
                 string ciphertext = Convert.ToBase64String(cipherAsBytes);
-                
                 
                 //TODO REMOVE
                 
