@@ -251,24 +251,55 @@ namespace Crypto
                 var plainBytes = Encoding.UTF8.GetBytes(plaintext);
                 if (plainBytes.Length >= values[2] + values[3]) // No messages longer than the key allowed
                 {
-                    Console.Error.WriteLine("Error: The length of message '{0}' (len = {1}) exceeds the keysize {2}." +
+                    Console.Error.WriteLine("Error: The length of message '{0}' (len = {1}) exceeds the keySize {2}." +
                                             "All messages must be smaller than the keySize. \n This may be fixed by" +
-                                            "generating a new keypair with a larger keySize.", plainBytes.Length,
-                                              (values[2] + values[3]));
+                                            " generating a new keypair with a larger keySize.", plaintext, 
+                        plainBytes.Length, (values[2] + values[3]));
                     return; //exit
-                }//else, we may procede
+                }//else, we may proceed
+
+                BigInteger plainAsBigInt = new BigInteger(plainBytes);
                 
+                // Do it
+                BigInteger ciphered = BigInteger.ModPow(e, n, plainAsBigInt);
                 
+                //Turn to bytes...
+                byte[] cipherAsBytes = ciphered.ToByteArray();
+                
+                //... and base64 encode
+                string ciphertext = Convert.ToBase64String(cipherAsBytes);
+                
+                //Create the message, serialize it, and format it for sending
+                Message msg = new Message(email, ciphertext);
+                var msgStr = JsonSerializer.Serialize(msg);
+                var msgContent = new StringContent(msgStr, Encoding.UTF8, "application/json");
+                var sendTo = ServerUrl + MsgExtension + email;
+                
+                // Fire.
+                var putRequest = _client.PutAsync(sendTo, msgContent);
+                var response = putRequest.Result;
 
-
-
-
-
+                // Check effect.
+                switch (response.StatusCode)
+                {
+                    case HttpStatusCode.NotFound:
+                        Console.Error.WriteLine("Error: URL not found, 404. URL may have changed from old '{0}'. Recompile " +
+                                                " with correct server URL.", ServerUrl);
+                        break;
+                    case HttpStatusCode.OK://success cases
+                        Console.WriteLine("Message written");
+                        break;
+                    case HttpStatusCode.NoContent:
+                        Console.WriteLine("Message Written");
+                        break;
+                    default:
+                        Console.WriteLine("Received unexpected response: " + response.StatusCode);
+                        break;
+                }// We're done here
             }
             catch (FileNotFoundException)
             {
-                Console.Error.WriteLine("Error: The public key for '{0}' does not exist. It must be fetched before" +
-                                        "a message may be sent to them.",email);
+                Console.Error.WriteLine("Key does not exist for '{0}'", email);
                 return;
             }
         }
@@ -327,8 +358,7 @@ namespace Crypto
             {
                 string strKey = File.ReadAllText(PublicKeyName);
                 
-                //next add the email to the pubkey
-
+                //next add the email to the public key
                 KeyObj pubKey = JsonSerializer.Deserialize<KeyObj>(strKey);
                 if (pubKey != null)
                 {
@@ -347,8 +377,8 @@ namespace Crypto
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.NotFound:
-                            Console.Error.WriteLine("Error: URL not found, 404. URL may have changed. Recompile " +
-                                                    "with correct server URL.");
+                            Console.Error.WriteLine("Error: URL not found, 404. URL may have changed from old '{0}'. Recompile " +
+                                                    " with correct server URL.", ServerUrl);
                             break;
                         case HttpStatusCode.OK://success cases
                             Console.WriteLine("Key saved");
