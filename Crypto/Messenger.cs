@@ -35,8 +35,6 @@ namespace Crypto
         private const string ServerUrl = "http://kayrun.cs.rit.edu:5000/";
         private const string KeyExtension = "Key/";
         private const String MsgExtension = "Message/";
-        
-        
 
         private readonly HttpClient _client;
         private readonly PrimeGen _generator;
@@ -54,14 +52,14 @@ namespace Crypto
             //msgr.ParseArguments(args); //Send down execution path with string array
             //
             //
-           // msgr.KeyGen();
-             msgr.SendKey("jjp9217@cs.rit.edu");
-             msgr.GetKey("jjp9217@cs.rit.edu");
-            
-            
+           //msgr.KeyGen();
+            //  msgr.SendKey("jjp9217@cs.rit.edu");
+            //  msgr.GetKey("jjp9217@cs.rit.edu");
+            //
+            //
             msgr.SendMsg("jjp9217@cs.rit.edu","plaintext");
-            
-            msgr.GetMsg("jjp9217@cs.rit.edu");
+            //
+            // msgr.GetMsg("jjp9217@cs.rit.edu");
             //
     
         }
@@ -390,26 +388,35 @@ namespace Crypto
                 //... and base64 encode
                 string ciphertext = Convert.ToBase64String(cipherAsBytes);
                 
+                
+                
+                
                 //TODO REMOVE
                 
                 
                 //NOW UNDO IT 
 
-                string privateKeyLit =
-                    "AAABANl9qs6RHgcauYjwsovCAFZ7Cc78wUGIwievUDkHx\u002BveXydOVW\u002BB3NQT7OW/jyZjbSRGe8S7mlzCU20hmrazWEHFiO/CJIE/ePSDWTK\u002BsSFcyOtooQnrV6mJlT7Jo6Kd1eMEtXj1jgzZsz8fTeqKO9\u002B2p9eBPx73nBZcGSiCBLR7KuybghXMwG65NB4zJTZ7d5oj8kQGlSYqrXotRpAYRgQVwLQC2v67QSjTHqjgqtkBQM82GozkotfsR23pVudQF77hnVx8WBL/b/x9\u002BbjA6vvRFrewG/WJQOX9pe4ym0bAHkcbLKdpguSYArY0Ze83fdQEQKeVOkQxqbpJgqBVsBMAAAEAVxF/gaybdlC15DTDepUwWHUbjWR6\u002B\u002BOFf5asyvhc6aGpatvzn3c4E1Rkq7uf07mS3KU59MC1DyG7JlzGV17Tpura3/1kEDgDJSrOJs20DmtrHFBK3AeHYsdBACmTzvn0Y1mTnQZ6wKVqygp5fmnxQ\u002B0lhWkkF0\u002BB5K8oLKXIKdjr4f\u002BofmK6pzyEyiY7izby75w4fCbxC/vz9GtBUx4PFFT0O/B7oxqlZYAFFuhP\u002BckcYJwM9yIAv5jdAZBNy9xK1JOsMCU1vPl9EZ3VrKS3ioJcBchECnVVEW480DCPoYqoowtWydPqca/8\u002BA5xbaeFC5\u002Bh6dppeDhP9XSJG5F/IA==";
-
-
-                var pkA = Convert.FromBase64String(privateKeyLit);//byte ver
+                var p = JsonSerializer.Deserialize<PrivateKeyObj>(File.ReadAllText(PrivateKeyName));
+                
+                var pkA = Convert.FromBase64String(p.key);//byte ver
+                //var pkA = Encoding.UTF8.GetBytes(p.key); if we do this, the source array isn't long enough...
 
                 var decr = ExtractKey(pkA);
 
                 var d = decr[0];
 
                 var reversed = BigInteger.ModPow(d, n, ciphered);
+                //
+                // Console.WriteLine(plainAsBigInt);
+                // Console.WriteLine(ciphered);
+                // Console.WriteLine(reversed);
+                //
+                Console.WriteLine("e:" + e);
+                Console.WriteLine("d:" + d);
+                Console.WriteLine("n from pub:" + n);
+                Console.WriteLine("n from priv: " + decr[1]);
                 
-                Console.WriteLine(plainAsBigInt);
-                Console.WriteLine(ciphered);
-                Console.WriteLine(reversed);
+                
                 
                 Console.WriteLine(Encoding.UTF8.GetString(reversed.ToByteArray()));
 
