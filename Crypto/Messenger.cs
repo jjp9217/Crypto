@@ -1,5 +1,4 @@
 ﻿//Jesse Pingitore
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +13,7 @@ namespace Crypto
 {
     /// <summary>
     /// A basic messenger service. Generates an RSA keypair, and sends over HTTP to a partner server.
-    /// This program presumes that the architecture of the running computer is Big Endian.
+    /// This program presumes that the architecture of the running computer is Little Endian.
     /// </summary>
     public class Messenger
     {
@@ -52,18 +51,18 @@ namespace Crypto
         public static void Main(string[] args)
         {
             Messenger msgr = new Messenger();
-            //msgr.ParseArguments(args); //Send down execution path with string array
-
-            
-            //msgr.KeyGen();
-            // msgr.SendKey("jjp9217@cs.rit.edu");
-            // msgr.GetKey("jjp9217@cs.rit.edu");
+            msgr.ParseArguments(args); //Send down execution path with string array
             //
             //
-            msgr.SendMsg("jjp9217@cs.rit.edu","bababoi");
-            
-            msgr.GetMsg("jjp9217@cs.rit.edu");
-            
+            // //msgr.KeyGen();
+            // // msgr.SendKey("jjp9217@cs.rit.edu");
+            // // msgr.GetKey("jjp9217@cs.rit.edu");
+            // //
+            // //
+            // msgr.SendMsg("jjp9217@cs.rit.edu","plaintext");
+            //
+            // msgr.GetMsg("jjp9217@cs.rit.edu");
+            //
     
         }
         
@@ -546,15 +545,24 @@ namespace Crypto
                 Console.Error.WriteLine("Error: Arguments must be provided.");
                 PrintHelp();
             }
-
-            switch (args[0])//TODO convert to enum
+            switch (args[0])
             {
                 case "keyGen":
                     if (args.Length != 2)
                     {
                         Console.Error.WriteLine("Error: <keygen> requires an argument <keySize>");
                     }
-                    else KeyGen(Convert.ToInt32(args[1]));
+                    else
+                    {
+                        try
+                        {
+                            var convOption = Convert.ToInt32(args[1]);
+                            KeyGen(convOption);
+                        }
+                        catch (FormatException)
+                        { Console.Error.WriteLine("Error: argument <keySize> requires must be a number");
+                        }  
+                    }
                     break;
                 
                 case "sendKey":
