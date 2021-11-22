@@ -193,19 +193,14 @@ namespace Crypto
 
             vals[0] = new BigInteger(el);
 
-            //and do the same for Nonce //////////////
+            //and do the same for Nonce 
 
             byte[] nLenB = new byte[AllocatedBytes];
-            //something gets warped here, nLen = E - 1???
             Array.Copy(key, elLen + AllocatedBytes, 
                 nLenB, 0, AllocatedBytes);
-            
             Array.Reverse(nLenB);
-
             int nLen = BitConverter.ToInt32(nLenB, 0);
-
             byte[] n = new byte[nLen];
-            
             Array.Copy(key, elLen + AllocatedBytes + AllocatedBytes, n, 0, nLen);
 
             vals[1] = new BigInteger(n);
@@ -253,9 +248,17 @@ namespace Crypto
                 
                 //verify that we can encode the message, if the bit length of e+n < message we cannot send it
 
-                var plainBytes = Convert.FromBase64String(plaintext);
-                
-                
+                var plainBytes = Encoding.UTF8.GetBytes(plaintext);
+                if (plainBytes.Length >= values[2] + values[3]) // No messages longer than the key allowed
+                {
+                    Console.Error.WriteLine("Error: The length of message '{0}' (len = {1}) exceeds the keysize {2}." +
+                                            "All messages must be smaller than the keySize. \n This may be fixed by" +
+                                            "generating a new keypair with a larger keySize.", plainBytes.Length,
+                                              (values[2] + values[3]));
+                    return;
+                }
+
+
 
 
 
