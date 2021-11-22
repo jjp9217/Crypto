@@ -1,16 +1,17 @@
 ﻿//Jesse Pingitore
-
 using System;
-using System.Buffers.Text;
 using System.Text.Json.Serialization;
-using Microsoft.VisualBasic;
 
 namespace Crypto
 {
+    /// <summary>
+    /// An format for a Key. Designed for use as a JSON object.
+    /// </summary>
     public class KeyObj
     {
+        // The server specifically stores these with lowercase names, so we must break C# style purposely. 
         public string email { get; set; }
-        public string key { get; set; } //Really, this is a JSON friendly way of holding a byte array.
+        public string key { get; set; } //Really, this is a JSON friendly way of encoding a byte array.
 
         //The value must only be updated by a byte array
         public void SetB64Key(byte[] value)

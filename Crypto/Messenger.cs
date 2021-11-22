@@ -255,8 +255,10 @@ namespace Crypto
                                             "All messages must be smaller than the keySize. \n This may be fixed by" +
                                             "generating a new keypair with a larger keySize.", plainBytes.Length,
                                               (values[2] + values[3]));
-                    return;
-                }
+                    return; //exit
+                }//else, we may procede
+                
+                
 
 
 
