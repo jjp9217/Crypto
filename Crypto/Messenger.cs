@@ -44,7 +44,7 @@ namespace Crypto
 
         public Messenger(int bitSize = DefaultBitSize)
         {
-            this._generator = new PrimeGen(DefaultBitSize);
+            this._generator = new PrimeGen(bitSize);
             this._client = new HttpClient();
      
         }
@@ -54,11 +54,11 @@ namespace Crypto
             Messenger msgr = new Messenger();
             //msgr.ParseArguments(args); //Send down execution path with string array
 
-            //
-            //msgr.KeyGen();
-            //msgr.SendKey("jjp9217@cs.rit.edu");
-            //msgr.GetKey("jjp9217@cs.rit.edu");
-            //
+            
+            msgr.KeyGen();
+            msgr.SendKey("jjp9217@cs.rit.edu");
+            msgr.GetKey("jjp9217@cs.rit.edu");
+            
             
             msgr.SendMsg("jjp9217@cs.rit.edu","bababoi");
             
@@ -290,7 +290,7 @@ namespace Crypto
                         Console.WriteLine("Message written");
                         break;
                     case HttpStatusCode.NoContent:
-                        Console.WriteLine("Message Written");
+                        Console.WriteLine("Message written");
                         break;
                     default:
                         Console.WriteLine("Received unexpected response: " + response.StatusCode);
@@ -300,7 +300,6 @@ namespace Crypto
             catch (FileNotFoundException)
             {
                 Console.Error.WriteLine("Key does not exist for '{0}'", email);
-                return;
             }
         }
 
@@ -392,6 +391,15 @@ namespace Crypto
                     }
 
                     //finally, add the email string to the private key so we know whose public key it matches
+                    strKey = File.ReadAllText(PrivateKeyName);
+                    KeyObj pvtKey = JsonSerializer.Deserialize<KeyObj>(strKey);
+                    if (pvtKey != null)
+                    {
+                        pvtKey.email = email; //TODO turn this into a list (why do we need that?)
+                    }
+
+                    var outStr = JsonSerializer.Serialize(pvtKey);
+                    File.WriteAllText(PrivateKeyName, outStr);
                 }
                 
                 else
