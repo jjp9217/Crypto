@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -56,9 +55,9 @@ namespace Crypto
             //msgr.ParseArguments(args); //Send down execution path with string array
 
             //
-            // msgr.KeyGen();
-            // msgr.SendKey("jjp9217@cs.rit.edu");
-            // msgr.GetKey("jjp9217@cs.rit.edu");
+            //msgr.KeyGen();
+            //msgr.SendKey("jjp9217@cs.rit.edu");
+            //msgr.GetKey("jjp9217@cs.rit.edu");
             //
             
             msgr.SendMsg("jjp9217@cs.rit.edu","bababoi");
@@ -172,11 +171,10 @@ namespace Crypto
         /// The inverse operator of Rsa(). Will take in a formed key (as byte[]), and return it's element and nonce.
         /// </summary>
         /// <param name="key">The key to extract the element and nonce from. Must be in byte-array form.</param>
-        /// <returns>The element and nonce in form [el,N]</returns>
+        /// <returns>The element, nonce, and their sizes in form [el,N,elLen,NLen]</returns>
         private BigInteger[] ExtractKey(byte[] key)
         {
-            BigInteger[] vals = new BigInteger[2];
-            
+            BigInteger[] vals = new BigInteger[4];
             
             //first, read the first number of bytes to know the size of the next element
             byte[] elLengthBytes = new byte[AllocatedBytes];
@@ -195,12 +193,14 @@ namespace Crypto
 
             vals[0] = new BigInteger(el);
 
-            //and do the same for Nonce
+            //and do the same for Nonce //////////////
 
             byte[] nLenB = new byte[AllocatedBytes];
-            
+            //something gets warped here, nLen = E - 1???
             Array.Copy(key, elLen + AllocatedBytes, 
                 nLenB, 0, AllocatedBytes);
+            
+            Array.Reverse(nLenB);
 
             int nLen = BitConverter.ToInt32(nLenB, 0);
 
@@ -209,6 +209,10 @@ namespace Crypto
             Array.Copy(key, elLen + AllocatedBytes + AllocatedBytes, n, 0, nLen);
 
             vals[1] = new BigInteger(n);
+            
+            //and add the sizes for message verification
+            vals[2] = new BigInteger(elLen);
+            vals[3] = new BigInteger(nLen);
             
             return vals;
         }
@@ -233,7 +237,7 @@ namespace Crypto
 
                 if (key == null)
                 {
-                    Console.Error.WriteLine("Error: The public key for '{0}' cannot be verified as a KeyObj.", email);
+                    Console.Error.WriteLine("Error: The public key for '{0}' cannot be verified as a valid key.", email);
                     return;
                 }
                 
@@ -244,13 +248,17 @@ namespace Crypto
                 //next we need to perform an encoding. strip out E and N from the byte array
 
                 BigInteger[] values = ExtractKey(trueKey);
+                var e = values[0];
+                var n = values[1];
                 
-                //then, use ModPow to turn the message into ciphertext
+                //verify that we can encode the message, if the bit length of e+n < message we cannot send it
+
+                var plainBytes = Convert.FromBase64String(plaintext);
                 
-                //TODO
                 
-                
-                
+
+
+
             }
             catch (FileNotFoundException)
             {
