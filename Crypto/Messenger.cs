@@ -49,17 +49,17 @@ namespace Crypto
         public static void Main(string[] args)
         {
             Messenger msgr = new Messenger();
-            //msgr.ParseArguments(args); //Send down execution path with string array
+            //msgr.ParseArguments(Console.ReadLine().Split()); //Send down execution path with string array
             //
             //
            //msgr.KeyGen();
-            //  msgr.SendKey("jjp9217@cs.rit.edu");
-            //  msgr.GetKey("jjp9217@cs.rit.edu");
+              // msgr.SendKey("jjp9217@cs.rit.edu");
+              // msgr.GetKey("jjp9217@cs.rit.edu");
             //
             //
             msgr.SendMsg("jjp9217@cs.rit.edu","plaintext");
             //
-            // msgr.GetMsg("jjp9217@cs.rit.edu");
+             // msgr.GetMsg("jjp9217@cs.rit.edu");
             //
     
         }
@@ -304,7 +304,7 @@ namespace Crypto
                     }
                     
                     // Crack it.
-                    var plainAsBigInt = BigInteger.ModPow(d, n, cipherAsBigInt);
+                    var plainAsBigInt = BigInteger.ModPow(cipherAsBigInt, d, n);
                     
                     // Turn it into bytes...
                     var plainAsBytes = plainAsBigInt.ToByteArray();
@@ -380,7 +380,7 @@ namespace Crypto
                 BigInteger plainAsBigInt = new BigInteger(plainBytes);
                 
                 // Do it
-                BigInteger ciphered = BigInteger.ModPow(e, n, plainAsBigInt);
+                BigInteger ciphered = BigInteger.ModPow(plainAsBigInt, e, n );
                 
                 //Turn to bytes...
                 byte[] cipherAsBytes = ciphered.ToByteArray();
@@ -389,27 +389,27 @@ namespace Crypto
                 string ciphertext = Convert.ToBase64String(cipherAsBytes);
                 
                 
-                
-                
-                //TODO REMOVE
-                
-                
+                //
+                //
+                // //TODO REMOVE
+                //
+                //
                 //NOW UNDO IT 
-
+                
                 var p = JsonSerializer.Deserialize<PrivateKeyObj>(File.ReadAllText(PrivateKeyName));
                 
                 var pkA = Convert.FromBase64String(p.key);//byte ver
                 //var pkA = Encoding.UTF8.GetBytes(p.key); if we do this, the source array isn't long enough...
-
+                
                 var decr = ExtractKey(pkA);
-
+                
                 var d = decr[0];
-
-                var reversed = BigInteger.ModPow(d, n, ciphered);
+                
+                var reversed = BigInteger.ModPow(ciphered, d, n);
                 //
-                // Console.WriteLine(plainAsBigInt);
-                // Console.WriteLine(ciphered);
-                // Console.WriteLine(reversed);
+                Console.WriteLine(plainAsBigInt);
+                Console.WriteLine(ciphered);
+                Console.WriteLine(reversed);
                 //
                 Console.WriteLine("e:" + e);
                 Console.WriteLine("d:" + d);
@@ -419,16 +419,16 @@ namespace Crypto
                 
                 
                 Console.WriteLine(Encoding.UTF8.GetString(reversed.ToByteArray()));
-
-
+                
+                
                 return;
-
-
-
-
-
-
-                //TODO REMOVE
+                //
+                //
+                //
+                //
+                //
+                //
+                // //TODO REMOVE
                 
                 //Create the message, serialize it, and format it for sending
                 Message msg = new Message(email, ciphertext);
